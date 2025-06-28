@@ -23,9 +23,12 @@ services:
     depends_on: 
       - postgres
       - elasticsearch
+      - ollama
     build: ./Server
     ports: 
       - 3000:3000
+    env_file:
+      - .env
     environment: 
       NODE_ENV: development
       PORT: 3000
@@ -58,7 +61,7 @@ services:
       POSTGRES_DB: github_scanner
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      PGDATA: / a
+      PGDATA:  /var/lib/postgresql/data
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -106,12 +109,21 @@ services:
     profiles:
       - dev  
 
+  ollama:
+    image: ollama/ollama
+    ports:
+      - 11434:11434
+    volumes:
+      - ollama_data:/root/.ollama
+
 volumes:
   postgres_data:
     driver: local
   elasticsearch_data:
     driver: local
   temp_data:
+    driver: local
+  ollama_data:
     driver: local
 
 networks:
