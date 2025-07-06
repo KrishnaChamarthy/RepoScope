@@ -36,8 +36,6 @@ services:
       ELASTICSEARCH_URL: http://elasticsearch:9200
       ELASTICSEARCH_INDEX_PREFIX: github_scanner
       GITHUB_TOKEN: ${GITHUB_TOKEN}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       JWT_SECRET: ${JWT_SECRET}
       FRONTEND_URL: http://localhost:3001
     volumes:
