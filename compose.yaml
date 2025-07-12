@@ -7,8 +7,8 @@ services:
     build: ./Client
     ports:
       - 5173:5173
-    environment:
-      VITE_API_URL: http://localhost:3000
+    env_file:
+      - ./Client/.env
     develop:
       watch:
         - path: ./Client/package.json
@@ -28,7 +28,7 @@ services:
     ports: 
       - 3000:3000
     env_file:
-      - .env
+      - ./Server/.env
     environment: 
       NODE_ENV: development
       PORT: 3000
@@ -37,7 +37,7 @@ services:
       ELASTICSEARCH_INDEX_PREFIX: github_scanner
       GITHUB_TOKEN: ${GITHUB_TOKEN}
       JWT_SECRET: ${JWT_SECRET}
-      FRONTEND_URL: http://localhost:3001
+      FRONTEND_URL: http://localhost:5173  # Changed from 3001 to 5173
     volumes:
       - ./temp:/app/temp
     develop:
