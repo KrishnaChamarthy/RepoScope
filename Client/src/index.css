@@ -1,3 +1,93 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom utility classes for text clamping */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Custom background animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+  }
+}
+
+@keyframes drift {
+  0% {
+    transform: translateX(-100px) translateY(-50px) rotate(0deg);
+  }
+  50% {
+    transform: translateX(100px) translateY(50px) rotate(180deg);
+  }
+  100% {
+    transform: translateX(-100px) translateY(-50px) rotate(360deg);
+  }
+}
+
+@keyframes flow {
+  0% {
+    transform: translateX(-200px) translateY(-100px) scale(1);
+  }
+  33% {
+    transform: translateX(200px) translateY(100px) scale(1.2);
+  }
+  66% {
+    transform: translateX(-100px) translateY(200px) scale(0.8);
+  }
+  100% {
+    transform: translateX(-200px) translateY(-100px) scale(1);
+  }
+}
+
+@keyframes morphing {
+  0%, 100% {
+    border-radius: 50% 50% 50% 50%;
+    transform: rotate(0deg);
+  }
+  25% {
+    border-radius: 60% 40% 60% 40%;
+    transform: rotate(90deg);
+  }
+  50% {
+    border-radius: 40% 60% 40% 60%;
+    transform: rotate(180deg);
+  }
+  75% {
+    border-radius: 50% 50% 40% 60%;
+    transform: rotate(270deg);
+  }
+}
+
+/* Custom utility classes */
+.animate-float {
+  animation: float 8s ease-in-out infinite;
+}
+
+.animate-drift {
+  animation: drift 15s linear infinite;
+}
+
+.animate-flow {
+  animation: flow 20s ease-in-out infinite;
+}
+
+.animate-morphing {
+  animation: morphing 12s ease-in-out infinite;
+}

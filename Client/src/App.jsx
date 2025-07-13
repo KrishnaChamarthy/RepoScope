@@ -6,11 +6,27 @@ import InsightsPage from './pages/InsightsPage';
 import ExplorePage from './pages/ExplorePage';
 import AnalyzePage from './pages/AnalyzePage';
 import ProfilePage from './pages/ProfilePage';
+import RepositoryFilesPage from './pages/RepositoryFilesPage';
+import { isGitHubUrl, formatRepositoryData } from './utils/githubUtils';
 
 const Background = () => (
-  <div className="absolute inset-0 overflow-hidden">
-    <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-    <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+  <div className="fixed inset-0 overflow-hidden pointer-events-none">
+    {/* Primary flowing gradients with morphing shapes */}
+    <div className="absolute -top-1/2 -right-1/2 w-[1000px] h-[1000px] bg-gradient-to-br from-purple-500/20 via-purple-600/15 to-transparent animate-flow animate-morphing mix-blend-multiply filter blur-3xl"></div>
+    <div className="absolute -bottom-1/2 -left-1/2 w-[1200px] h-[1200px] bg-gradient-to-tr from-blue-500/20 via-blue-600/15 to-transparent animate-drift mix-blend-multiply filter blur-3xl"></div>
+    
+    {/* Secondary flowing elements */}
+    <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-gradient-to-r from-purple-400/15 to-pink-400/15 animate-float mix-blend-multiply filter blur-2xl"></div>
+    <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-gradient-to-l from-blue-400/15 to-cyan-400/15 animate-drift mix-blend-multiply filter blur-2xl" style={{ animationDelay: '5s' }}></div>
+    
+    {/* Floating particles with continuous movement */}
+    <div className="absolute top-1/3 right-1/3 w-40 h-40 bg-purple-300/10 animate-float mix-blend-multiply filter blur-xl" style={{ animationDelay: '2s', animationDuration: '10s' }}></div>
+    <div className="absolute bottom-1/3 left-1/3 w-32 h-32 bg-blue-300/10 animate-drift mix-blend-multiply filter blur-xl" style={{ animationDelay: '7s', animationDuration: '12s' }}></div>
+    <div className="absolute top-2/3 left-1/2 w-28 h-28 bg-indigo-300/8 animate-flow mix-blend-multiply filter blur-xl" style={{ animationDelay: '3s' }}></div>
+    
+    {/* Gradient overlays for depth */}
+    <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 via-transparent to-slate-900/30"></div>
+    <div className="absolute inset-0 bg-gradient-to-r from-purple-900/10 via-transparent to-blue-900/10"></div>
   </div>
 );
 
@@ -81,14 +97,54 @@ const App = () => {
   const [selectedRepo, setSelectedRepo] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [userRepositories, setUserRepositories] = useState([]);
 
   const handleConnectGitHub = () => {
     console.log('Connecting to GitHub...');
   };
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     setIsSearching(true);
-    setTimeout(() => setIsSearching(false), 1500);
+    
+    try {
+      if (isGitHubUrl(searchQuery)) {
+        // Handle GitHub URL
+        const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/github/clone`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ repoUrl: searchQuery }),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const formattedRepo = formatRepositoryData(data.repo);
+          
+          setUserRepositories(prev => {
+            // Check if repo already exists
+            const exists = prev.some(repo => repo.id === formattedRepo.id);
+            if (exists) {
+              return prev.map(repo => repo.id === formattedRepo.id ? formattedRepo : repo);
+            }
+            return [...prev, formattedRepo];
+          });
+          setSearchQuery(''); // Clear search after successful clone
+        } else {
+          const errorData = await response.json();
+          console.error('Failed to clone repository:', errorData.error);
+          alert(`Failed to clone repository: ${errorData.error}`);
+        }
+      } else {
+        // Handle regular search
+        setTimeout(() => setIsSearching(false), 1500);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      alert('An error occurred while processing your request');
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const handleRepoSelect = (repo) => {
@@ -108,9 +164,9 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative">
       <Background />
-      <div className="relative z-10">
+      <div className="relative z-10 min-h-screen">
         <Header onConnectGitHub={handleConnectGitHub} />
         <NavigationBar />
         <main className="max-w-7xl mx-auto px-6 py-8">
@@ -126,6 +182,7 @@ const App = () => {
                   showFilters={showFilters}
                   onToggleFilters={() => setShowFilters(!showFilters)}
                   repos={mockRepos}
+                  userRepositories={userRepositories}
                   onRepoSelect={handleRepoSelect}
                   searchResults={mockSearchResults}
                 />
@@ -154,6 +211,7 @@ const App = () => {
               }
             />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/repo/:owner/:repo/files" element={<RepositoryFilesPage />} />
           </Routes>
         </main>
       </div>

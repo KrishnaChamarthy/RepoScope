@@ -1,17 +1,16 @@
-FROM node:20-alpine
-
-# RUN addgroup app && adduser -S -G app app
-# USER app
+FROM node:18-alpine
 
 WORKDIR /app
+
+# Copy package files
 COPY package*.json ./
-
-# USER root
-# RUN chown -R app:app .
-# USER app
-
 RUN npm install
+
+# Copy source code
 COPY . .
+
+# Expose port
 EXPOSE 5173
 
-CMD npm run dev
+# Start dev server with host binding
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]

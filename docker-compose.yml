@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: reposcope-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_HOST=0.0.0.0:11434
+      - OLLAMA_NUM_PARALLEL=2
+      - OLLAMA_MAX_LOADED_MODELS=2
+      - OLLAMA_NUM_THREAD=8
+      - OLLAMA_FLASH_ATTENTION=1
+    deploy:
+      resources:
+        limits:
+          memory: 8G  # Allocate 8GB RAM
+          cpus: '4'   # Use 4 CPU cores
+        reservations:
+          memory: 4G  # Reserve at least 4GB RAM
+          cpus: '2'   # Reserve at least 2 CPU cores
+    restart: unless-stopped
+    networks:
+      - reposcope-network
+
+  backend:
+    build:
+      context: ./Server
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - OLLAMA_URL=http://ollama:11434  # Use Docker service name
+      - NODE_ENV=development
+    depends_on:
+      - ollama
+    networks:
+      - reposcope-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1'
+
+  frontend:
+    build:
+      context: ./Client
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    depends_on:
+      - backend
+    networks:
+      - reposcope-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+volumes:
+  ollama_data:
+
+networks:
+  reposcope-network:
+    driver: bridge

@@ -1,18 +1,18 @@
-FROM node:20-alpine
-
-# RUN addgroup app && adduser -S -G app app
-# USER app
-RUN apk add --no-cache git
+FROM node:18-alpine
 
 WORKDIR /app
+
+# Copy package files
 COPY package*.json ./
 
-# USER root
-# RUN chown -R app:app .
-# USER app
+# Install dependencies
+RUN npm ci --only=production
 
-RUN npm install
+# Copy source code
 COPY . .
-EXPOSE 8000
 
-CMD npm start
+# Expose port
+EXPOSE 3000
+
+# Start the application
+CMD ["npm", "start"]

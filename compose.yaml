@@ -2,22 +2,23 @@ version: "3.8"
 
 services:
   web:
-    depends_on: 
-      - api
     build: ./Client
     ports:
-      - 5173:5173
-    env_file:
-      - ./Client/.env
+      - "5173:5173"
+    volumes:
+      - ./Client:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - VITE_HMR_HOST=localhost
+    command: npm run dev -- --host 0.0.0.0
     develop:
       watch:
-        - path: ./Client/package.json
-          action: rebuild
-        - path: ./Client/package-lock.json
-          action: rebuild
         - path: ./Client
-          target: /app
           action: sync
+          target: /app
+          ignore:
+            - node_modules/
 
   api:
     depends_on: 
@@ -27,6 +28,9 @@ services:
     build: ./Server
     ports: 
       - 3000:3000
+    volumes:
+      - ./Server:/app
+      - /app/node_modules
     env_file:
       - ./Server/.env
     environment: 
@@ -37,18 +41,19 @@ services:
       ELASTICSEARCH_INDEX_PREFIX: github_scanner
       GITHUB_TOKEN: ${GITHUB_TOKEN}
       JWT_SECRET: ${JWT_SECRET}
-      FRONTEND_URL: http://localhost:5173  # Changed from 3001 to 5173
-    volumes:
-      - ./temp:/app/temp
+      FRONTEND_URL: http://localhost:5173
+    command: npm run dev
     develop:
       watch:
+        - path: ./Server
+          action: sync
+          target: /app
+          ignore:
+            - node_modules/
         - path: ./Server/package.json
           action: rebuild
         - path: ./Server/package-lock.json
           action: rebuild
-        - path: ./Server
-          target: /app
-          action: sync
 
   postgres:
     image: postgres:15
