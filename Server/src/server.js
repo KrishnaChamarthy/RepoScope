@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import repoRoutes from './routes/repo.js';
 import searchRoutes from './routes/search.js';
 import explainRoutes from './routes/explain.js';
+import analysisRoutes from './routes/analysis.js';
 import session from 'express-session';
 import passport from 'passport';
 import githubAuthRoutes from './auth/github.js';
@@ -47,6 +48,7 @@ app.use(passport.session());
 app.use('/api/repo', repoRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/explain', explainRoutes);
+app.use('/api/analysis', analysisRoutes);
 app.use('/api/auth', githubAuthRoutes);
 app.use('/api/github', githubRoutes);
 

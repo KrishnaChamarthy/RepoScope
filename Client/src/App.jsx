@@ -2,29 +2,25 @@ import React, { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import NavigationBar from './components/NavigationBar';
-import InsightsPage from './pages/InsightsPage';
 import ExplorePage from './pages/ExplorePage';
 import AnalyzePage from './pages/AnalyzePage';
 import ProfilePage from './pages/ProfilePage';
+import SettingsPage from './pages/SettingsPage';
 import RepositoryFilesPage from './pages/RepositoryFilesPage';
 import { isGitHubUrl, formatRepositoryData } from './utils/githubUtils';
 
 const Background = () => (
   <div className="fixed inset-0 overflow-hidden pointer-events-none">
-    {/* Primary flowing gradients with morphing shapes */}
     <div className="absolute -top-1/2 -right-1/2 w-[1000px] h-[1000px] bg-gradient-to-br from-purple-500/20 via-purple-600/15 to-transparent animate-flow animate-morphing mix-blend-multiply filter blur-3xl"></div>
     <div className="absolute -bottom-1/2 -left-1/2 w-[1200px] h-[1200px] bg-gradient-to-tr from-blue-500/20 via-blue-600/15 to-transparent animate-drift mix-blend-multiply filter blur-3xl"></div>
     
-    {/* Secondary flowing elements */}
     <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-gradient-to-r from-purple-400/15 to-pink-400/15 animate-float mix-blend-multiply filter blur-2xl"></div>
     <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-gradient-to-l from-blue-400/15 to-cyan-400/15 animate-drift mix-blend-multiply filter blur-2xl" style={{ animationDelay: '5s' }}></div>
     
-    {/* Floating particles with continuous movement */}
     <div className="absolute top-1/3 right-1/3 w-40 h-40 bg-purple-300/10 animate-float mix-blend-multiply filter blur-xl" style={{ animationDelay: '2s', animationDuration: '10s' }}></div>
     <div className="absolute bottom-1/3 left-1/3 w-32 h-32 bg-blue-300/10 animate-drift mix-blend-multiply filter blur-xl" style={{ animationDelay: '7s', animationDuration: '12s' }}></div>
     <div className="absolute top-2/3 left-1/2 w-28 h-28 bg-indigo-300/8 animate-flow mix-blend-multiply filter blur-xl" style={{ animationDelay: '3s' }}></div>
     
-    {/* Gradient overlays for depth */}
     <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 via-transparent to-slate-900/30"></div>
     <div className="absolute inset-0 bg-gradient-to-r from-purple-900/10 via-transparent to-blue-900/10"></div>
   </div>
@@ -108,7 +104,6 @@ const App = () => {
     
     try {
       if (isGitHubUrl(searchQuery)) {
-        // Handle GitHub URL
         const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/github/clone`, {
           method: 'POST',
           headers: {
@@ -122,21 +117,19 @@ const App = () => {
           const formattedRepo = formatRepositoryData(data.repo);
           
           setUserRepositories(prev => {
-            // Check if repo already exists
             const exists = prev.some(repo => repo.id === formattedRepo.id);
             if (exists) {
               return prev.map(repo => repo.id === formattedRepo.id ? formattedRepo : repo);
             }
             return [...prev, formattedRepo];
           });
-          setSearchQuery(''); // Clear search after successful clone
+          setSearchQuery(''); 
         } else {
           const errorData = await response.json();
           console.error('Failed to clone repository:', errorData.error);
           alert(`Failed to clone repository: ${errorData.error}`);
         }
       } else {
-        // Handle regular search
         setTimeout(() => setIsSearching(false), 1500);
       }
     } catch (error) {
@@ -153,14 +146,6 @@ const App = () => {
 
   const handleGenerateReport = () => {
     console.log('Generating AI report...');
-  };
-
-  const handleAnalyzeComplexity = () => {
-    console.log('Analyzing complexity...');
-  };
-
-  const handleGetRecommendations = () => {
-    console.log('Getting recommendations...');
   };
 
   return (
@@ -191,26 +176,14 @@ const App = () => {
             <Route
               path="/analyze"
               element={
-                selectedRepo ? (
-                  <AnalyzePage
-                    selectedRepo={selectedRepo}
-                    onGenerateReport={handleGenerateReport}
-                  />
-                ) : (
-                  <div>Please select a repository to analyze.</div>
-                )
-              }
-            />
-            <Route
-              path="/insights"
-              element={
-                <InsightsPage
-                  onAnalyzeComplexity={handleAnalyzeComplexity}
-                  onGetRecommendations={handleGetRecommendations}
+                <AnalyzePage
+                  selectedRepo={selectedRepo}
+                  onGenerateReport={handleGenerateReport}
                 />
               }
             />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="/repo/:owner/:repo/files" element={<RepositoryFilesPage />} />
           </Routes>
         </main>

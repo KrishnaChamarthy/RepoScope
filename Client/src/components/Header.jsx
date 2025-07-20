@@ -29,9 +29,13 @@ const Header = () => {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+            <Link
+              to="/settings"
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              title="Settings"
+            >
               <Settings className="w-5 h-5 text-slate-400" />
-            </button>
+            </Link>
             {user ? (
               <>
                 <Link

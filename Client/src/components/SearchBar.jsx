@@ -10,7 +10,7 @@ const SearchBar = ({ searchQuery, onSearchChange, onSearch, isSearching, showFil
     <div className="relative">
       <input
         type="text"
-        placeholder="Search functions, classes, or paste GitHub URL to clone..."
+        placeholder="Paste GitHub URL to clone..."
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
         className="w-full pl-12 pr-20 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm text-sm md:text-base overflow-hidden"

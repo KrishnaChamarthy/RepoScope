@@ -6,11 +6,20 @@ const QuestionPanel = ({
   owner, 
   repo, 
   onClose, 
-  onAskQuestion 
+  onAskQuestion,
+  projectIndex
 }) => {
   const [question, setQuestion] = useState('');
   const [conversations, setConversations] = useState([]);
   const [isAsking, setIsAsking] = useState(false);
+
+  // Determine context level
+  const hasComprehensiveContext = projectIndex && projectIndex.fullContent && 
+    Object.keys(projectIndex.fullContent).length > 0;
+  
+  const contextInfo = hasComprehensiveContext ? 
+    `${projectIndex.summary?.totalFiles || 0} files analyzed` :
+    'Limited context available';
 
   // Load conversation history when component mounts or repo changes
   useEffect(() => {
@@ -153,14 +162,57 @@ const QuestionPanel = ({
         </div>
       </div>
 
+      {/* Context Status */}
+      <div className={`px-4 py-2 border-b border-white/10 ${hasComprehensiveContext ? 'bg-green-500/10' : 'bg-yellow-500/10'}`}>
+        <div className="flex items-center space-x-2 text-xs">
+          <div className={`w-2 h-2 rounded-full ${hasComprehensiveContext ? 'bg-green-400' : 'bg-yellow-400'}`}></div>
+          <span className={`${hasComprehensiveContext ? 'text-green-400' : 'text-yellow-400'}`}>
+            {hasComprehensiveContext ? '🧠 Comprehensive Analysis' : '⚠️ Basic Analysis'}
+          </span>
+          <span className="text-slate-400">• {contextInfo}</span>
+        </div>
+        {hasComprehensiveContext && projectIndex && (
+          <div className="mt-1 text-xs text-slate-400">
+            Found: {projectIndex.summary?.totalFunctions || 0} functions, {projectIndex.summary?.totalClasses || 0} classes, {projectIndex.summary?.languages?.join(', ') || 'multiple languages'}
+          </div>
+        )}
+      </div>
+
       {/* Conversation Area */}
       <div className="flex-1 p-4 overflow-y-auto space-y-3">
         {conversations.length === 0 ? (
           <div className="text-center text-slate-400 mt-8">
             <Bot className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p className="text-sm">Ask me anything about this repository!</p>
-            <p className="text-xs mt-2 text-slate-500">I can explain code, architecture, functionality, and more.</p>
-            <p className="text-xs mt-1 text-slate-500">Your conversation history will be saved locally.</p>
+            <p className="text-sm mb-3">Ask me anything about this repository!</p>
+            
+            {hasComprehensiveContext ? (
+              <div className="text-left bg-slate-800/30 rounded-lg p-3 text-xs space-y-2">
+                <p className="text-green-400 font-medium">✨ Enhanced AI Analysis Available</p>
+                <p className="text-slate-400">I can provide detailed insights about:</p>
+                <ul className="text-slate-400 space-y-1 ml-4">
+                  <li>• Code structure and architecture patterns</li>
+                  <li>• Function and class implementations</li>
+                  <li>• Configuration files and setup</li>
+                  <li>• Dependencies and technology stack</li>
+                  <li>• Best practices and code quality</li>
+                  <li>• Specific code snippets and logic</li>
+                </ul>
+                <div className="mt-2 p-2 bg-blue-500/10 rounded border border-blue-500/20">
+                  <p className="text-blue-400 text-xs font-medium">💡 Model Info</p>
+                  <p className="text-blue-300 text-xs">Currently using llama3.2:3b (small model)</p>
+                  <p className="text-slate-400 text-xs">For best results with large codebases, consider upgrading to llama3.2:7b or llama3.2:11b</p>
+                </div>
+                <p className="text-slate-500 mt-2">Try asking: "How does this project work?" or "What are the main components?"</p>
+              </div>
+            ) : (
+              <div className="text-left bg-yellow-500/10 rounded-lg p-3 text-xs space-y-2">
+                <p className="text-yellow-400 font-medium">⚠️ Limited Analysis Mode</p>
+                <p className="text-slate-400">For detailed code analysis, please wait for full project indexing to complete.</p>
+                <p className="text-slate-500">I can still provide general repository information.</p>
+              </div>
+            )}
+            
+            <p className="text-xs mt-3 text-slate-500">Your conversation history will be saved locally.</p>
           </div>
         ) : (
           <>
@@ -214,6 +266,30 @@ const QuestionPanel = ({
           </div>
         )}
       </div>
+
+      {/* Suggested Questions */}
+      {conversations.length === 0 && hasComprehensiveContext && (
+        <div className="px-4 py-2 border-t border-white/10 bg-slate-800/20">
+          <p className="text-xs text-slate-400 mb-2">Try asking:</p>
+          <div className="flex flex-wrap gap-1">
+            {[
+              "How does this project work?",
+              "What are the main components?",
+              "What's the architecture?",
+              "Explain the main functions",
+              "What technologies are used?"
+            ].map((suggestedQ, idx) => (
+              <button
+                key={idx}
+                onClick={() => setQuestion(suggestedQ)}
+                className="text-xs px-2 py-1 bg-purple-500/20 text-purple-300 rounded hover:bg-purple-500/30 transition-colors"
+              >
+                {suggestedQ}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Input Area */}
       <form onSubmit={handleSubmit} className="p-4 border-t border-white/10">

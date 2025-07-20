@@ -1,4 +1,4 @@
-import { Calendar, GitBranch, Star, Users, AlertCircle } from 'lucide-react';
+import { Calendar, GitBranch, Star, Users, AlertCircle, Database } from 'lucide-react';
 import React from 'react';
 
 const RepositoryStats = ({ repo }) => (
@@ -26,6 +26,24 @@ const RepositoryStats = ({ repo }) => (
           <p className="text-slate-400 text-sm">Open Issues</p>
         </div>
       </div>
+      {repo.contributors && (
+        <div className="flex items-center space-x-3">
+          <Users className="w-5 h-5 text-blue-400" />
+          <div>
+            <p className="text-white font-medium">{repo.contributors?.toLocaleString?.() ?? 0}</p>
+            <p className="text-slate-400 text-sm">Contributors</p>
+          </div>
+        </div>
+      )}
+      {repo.size && (
+        <div className="flex items-center space-x-3">
+          <Database className="w-5 h-5 text-purple-400" />
+          <div>
+            <p className="text-white font-medium">{(repo.size / 1024).toFixed(1)} MB</p>
+            <p className="text-slate-400 text-sm">Repository Size</p>
+          </div>
+        </div>
+      )}
       <div className="flex items-center space-x-3">
         <Calendar className="w-5 h-5 text-purple-400" />
         <div>

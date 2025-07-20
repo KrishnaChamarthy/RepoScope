@@ -4,7 +4,6 @@ import { Link, useLocation } from 'react-router-dom';
 const tabs = [
   { label: 'explore', path: '/' },
   { label: 'analyze', path: '/analyze' },
-  { label: 'insights', path: '/insights' },
 ];
 
 const NavigationBar = () => {

@@ -23,6 +23,7 @@ const RepositoryFilesPage = () => {
   const [showQuestionPanel, setShowQuestionPanel] = useState(false);
   const [projectIndex, setProjectIndex] = useState(null);
   const [isIndexing, setIsIndexing] = useState(false);
+  const [indexingProgress, setIndexingProgress] = useState(null);
 
   useEffect(() => {
     if (owner && repo) {
@@ -56,16 +57,31 @@ const RepositoryFilesPage = () => {
       return;
     }
 
-    // Build new index
+    // Build new comprehensive index with progress tracking
     setIsIndexing(true);
+    setIndexingProgress({ current: 0, total: 0, fileName: '', phase: 'Starting analysis...' });
+    
     try {
-      const index = await buildProjectIndex(files, api, owner, repo);
+      const index = await buildProjectIndex(files, api, owner, repo, (progress) => {
+        setIndexingProgress(progress);
+      });
       setProjectIndex(index);
       saveProjectIndex(owner, repo, index);
+      console.log(`✅ Project index built: ${index.summary.totalFiles} files, ${index.summary.totalLines} lines, ${index.summary.totalFunctions} functions analyzed`);
+      console.log('📊 Index summary:', {
+        totalFiles: index.summary.totalFiles,
+        totalLines: index.summary.totalLines,
+        languages: index.summary.languages,
+        frameworks: index.summary.frameworks,
+        dependencies: index.summary.dependencies?.slice(0, 10),
+        hasFullContent: Object.keys(index.fullContent || {}).length,
+        sampleFiles: Object.keys(index.fullContent || {}).slice(0, 5)
+      });
     } catch (error) {
-      console.error('Failed to build project index:', error);
+      console.error('Failed to build comprehensive project index:', error);
     } finally {
       setIsIndexing(false);
+      setIndexingProgress(null);
     }
   };
 
@@ -169,6 +185,30 @@ const RepositoryFilesPage = () => {
         isIndexing={isIndexing}
         projectIndex={projectIndex}
       />
+
+      {/* Comprehensive Indexing Progress */}
+      {isIndexing && indexingProgress && (
+        <div className="bg-purple-500/10 border-b border-purple-500/20 px-4 py-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center space-x-2">
+              <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-sm text-purple-400 font-medium">🧠 Building Comprehensive AI Context</span>
+            </div>
+            <span className="text-xs text-slate-400">
+              {indexingProgress.current}/{indexingProgress.total} files
+            </span>
+          </div>
+          <div className="w-full bg-slate-700 rounded-full h-1.5">
+            <div 
+              className="bg-gradient-to-r from-purple-500 to-blue-500 h-1.5 rounded-full transition-all duration-300"
+              style={{ width: `${(indexingProgress.current / Math.max(indexingProgress.total, 1)) * 100}%` }}
+            ></div>
+          </div>
+          <div className="mt-1 text-xs text-slate-400">
+            {indexingProgress.phase}: {indexingProgress.fileName}
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 flex overflow-hidden">
         <FileTree

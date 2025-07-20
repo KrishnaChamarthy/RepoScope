@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   web:
     build: ./Client
@@ -42,7 +40,7 @@ services:
       GITHUB_TOKEN: ${GITHUB_TOKEN}
       JWT_SECRET: ${JWT_SECRET}
       FRONTEND_URL: http://localhost:5173
-    command: npm run dev
+    command: npm run start
     develop:
       watch:
         - path: ./Server
@@ -113,11 +111,28 @@ services:
       - dev  
 
   ollama:
-    image: ollama/ollama
+    image: ollama/ollama:latest
+    container_name: reposcope-ollama
     ports:
-      - 11434:11434
+      - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_HOST=0.0.0.0:11434
+      - OLLAMA_NUM_PARALLEL=2
+      - OLLAMA_MAX_LOADED_MODELS=2
+      - OLLAMA_NUM_THREAD=8
+      - OLLAMA_FLASH_ATTENTION=1
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: '4'
+        reservations:
+          memory: 4G
+          cpus: '2'
+    restart: unless-stopped
 
 volumes:
   postgres_data:

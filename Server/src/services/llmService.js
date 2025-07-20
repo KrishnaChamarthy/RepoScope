@@ -4,6 +4,42 @@ import axios from 'axios';
 const OLLAMA_BASE_URL = process.env.OLLAMA_URL || 'http://ollama:11434';
 const MODEL = 'llama3.2:3b';
 
+// Model capabilities - adjust based on model size
+const getModelCapabilities = (modelName) => {
+  const model = modelName.toLowerCase();
+  
+  if (model.includes('3b')) {
+    return {
+      maxContext: 8192,
+      optimalContext: 4096,
+      maxOutput: 512,
+      needsSimplification: true
+    };
+  } else if (model.includes('7b')) {
+    return {
+      maxContext: 16384,
+      optimalContext: 8192,
+      maxOutput: 800,
+      needsSimplification: false
+    };
+  } else if (model.includes('13b') || model.includes('11b')) {
+    return {
+      maxContext: 32768,
+      optimalContext: 16384,
+      maxOutput: 1200,
+      needsSimplification: false
+    };
+  } else {
+    // Default for unknown models - be conservative
+    return {
+      maxContext: 8192,
+      optimalContext: 4096,
+      maxOutput: 512,
+      needsSimplification: true
+    };
+  }
+};
+
 export const checkOllamaHealth = async (retries = 3) => {
   for (let i = 0; i < retries; i++) {
     try {
@@ -82,25 +118,113 @@ Keep the explanation clear, concise, and focused on the most important aspects.`
 
 export const answerRepositoryQuestion = async (prompt) => {
   try {
+    const promptLength = prompt.length;
+    const capabilities = getModelCapabilities(MODEL);
+    
+    console.log(`🤖 Processing ${promptLength} character prompt with ${MODEL}`);
+    console.log(`📊 Model capabilities:`, capabilities);
+    
+    // For small models, we need to be much more aggressive about context reduction
+    let finalPrompt = prompt;
+    let contextWindow = capabilities.maxContext;
+    let maxTokens = capabilities.maxOutput;
+    
+    if (capabilities.needsSimplification && promptLength > capabilities.optimalContext) {
+      console.log('⚠️ Prompt too large for small model, creating simplified version...');
+      
+      // Extract the question
+      const questionMatch = prompt.match(/==== USER QUESTION ====([\s\S]*?)====/);
+      const question = questionMatch ? questionMatch[1].trim() : prompt.split('USER QUESTION')[1]?.split('====')[0]?.trim() || 'General repository question';
+      
+      // Extract key project info
+      const overviewMatch = prompt.match(/==== OVERVIEW ====([\s\S]*?)====/);
+      const overview = overviewMatch ? overviewMatch[1].trim() : '';
+      
+      // Extract some key files (much reduced)
+      const keyFileMatches = prompt.match(/--- ([^-]+) ---[\s\S]*?(?=---|$)/g);
+      const keyFilesInfo = keyFileMatches ? keyFileMatches.slice(0, 3).map(match => {
+        const lines = match.split('\n');
+        const fileName = lines[0].replace(/--- (.*) ---/, '$1').trim();
+        const preview = lines.slice(1, 20).join('\n'); // Much shorter preview
+        return `${fileName}:\n${preview}`;
+      }).join('\n\n') : '';
+      
+      finalPrompt = `REPOSITORY ANALYSIS
+
+${overview}
+
+KEY FILES:
+${keyFilesInfo}
+
+USER QUESTION: ${question}
+
+Provide a focused, specific answer based on the information above. Reference actual code and files when possible.`;
+      
+      console.log(`📉 Reduced prompt from ${promptLength} to ${finalPrompt.length} characters`);
+    }
+    
     const response = await axios.post(`${OLLAMA_BASE_URL}/api/generate`, {
       model: MODEL,
-      prompt,
+      prompt: finalPrompt,
       stream: false,
       options: {
-        temperature: 0.2,
+        temperature: 0.1, // Lower temperature for small models
         top_p: 0.9,
-        num_predict: 800,
+        num_predict: maxTokens,
         repeat_penalty: 1.1,
-        num_ctx: 8192
+        num_ctx: contextWindow,
+        stop: ['USER QUESTION:', '====', 'Human:', 'Assistant:'] // Add stop tokens
       }
     }, {
-      timeout: 120000
+      timeout: 180000
     });
 
-    return response.data.response;
+    const answer = response.data.response;
+    console.log(`✅ AI response generated: ${answer.length} characters`);
+    
+    // Add a note if we had to simplify
+    if (capabilities.needsSimplification && promptLength > capabilities.optimalContext) {
+      return `${answer}\n\n---\n*Note: For even more detailed analysis, consider using a larger model (7B or 13B parameters).*`;
+    }
+    
+    return answer;
+    
   } catch (error) {
-    console.error('Ollama API Error:', error.message);
-    throw new Error('Failed to answer question');
+    console.error('Ollama API Error:', error.message, error.response?.data);
+    
+    // Enhanced error handling with specific suggestions
+    if (error.message.includes('context') || error.message.includes('length') || error.message.includes('token')) {
+      console.log('⚠️ Context length error, providing basic analysis...');
+      
+      const questionMatch = prompt.match(/USER QUESTION[:\s]+(.*?)(?=\n\n|\n===|$)/s);
+      const question = questionMatch ? questionMatch[1].trim() : 'General repository analysis';
+      
+      const basicPrompt = `Question about a code repository: ${question}
+
+Provide a helpful answer based on common software development patterns and best practices.`;
+
+      try {
+        const basicResponse = await axios.post(`${OLLAMA_BASE_URL}/api/generate`, {
+          model: MODEL,
+          prompt: basicPrompt,
+          stream: false,
+          options: {
+            temperature: 0.3,
+            num_predict: 300,
+            num_ctx: 2048
+          }
+        }, {
+          timeout: 60000
+        });
+        
+        return `[Limited analysis - repository context too large for current model]\n\n${basicResponse.data.response}\n\n---\n*For comprehensive code analysis, consider using a larger model like llama3.2:7b or llama3.2:11b*`;
+      } catch (basicError) {
+        console.error('Basic analysis also failed:', basicError.message);
+        throw new Error('Unable to process repository analysis with current model configuration. Try using a larger model.');
+      }
+    }
+    
+    throw new Error('Failed to analyze repository: ' + error.message);
   }
 };
 

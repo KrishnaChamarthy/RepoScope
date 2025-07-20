@@ -1,7 +1,29 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Code, Copy, Eye, Brain, Loader2, File } from 'lucide-react';
 import ExplanationPanel from './ExplanationPanel';
 import QuestionPanel from './QuestionPanel';
+import Prism from 'prismjs';
+
+import 'prismjs/themes/prism-tomorrow.css';
+
+// Import only the most basic, stable languages
+import 'prismjs/components/prism-markup';
+import 'prismjs/components/prism-css';
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-json';
+import 'prismjs/components/prism-yaml';
+import 'prismjs/components/prism-sql';
+import 'prismjs/components/prism-bash';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-java';
+import 'prismjs/components/prism-c';
+
+// TypeScript requires JavaScript as dependency
+import 'prismjs/components/prism-typescript';
+
+// Line numbers plugin
+import 'prismjs/plugins/line-numbers/prism-line-numbers.css';
+import 'prismjs/plugins/line-numbers/prism-line-numbers';
 
 const CodeViewer = ({ 
   selectedFile,
@@ -17,28 +39,141 @@ const CodeViewer = ({
   repo,
   showQuestionPanel,
   onAskQuestion,
-  onCloseQuestionPanel
+  onCloseQuestionPanel,
+  projectIndex
 }) => {
   const getLanguage = (filename) => {
     const ext = filename?.split('.').pop()?.toLowerCase();
     const languageMap = {
+      // JavaScript family
       'js': 'javascript',
+      'mjs': 'javascript',
+      'cjs': 'javascript',
       'jsx': 'javascript',
       'ts': 'typescript',
       'tsx': 'typescript',
+      
+      // Python
       'py': 'python',
-      'java': 'java',
-      'cpp': 'cpp',
-      'c': 'c',
+      'pyw': 'python',
+      'pyi': 'python',
+      
+      // Web Technologies
+      'html': 'markup',
+      'htm': 'markup',
+      'xml': 'markup',
+      'svg': 'markup',
       'css': 'css',
-      'html': 'html',
+      'scss': 'css',
+      'sass': 'css',
+      'less': 'css',
+      
+      // Java & JVM Languages (use java for all)
+      'java': 'java',
+      'kt': 'java',
+      'scala': 'java',
+      'groovy': 'java',
+      
+      // C family
+      'c': 'c',
+      'cpp': 'c', // Use 'c' instead of 'cpp' to avoid dependency issues
+      'cc': 'c',
+      'cxx': 'c',
+      'h': 'c',
+      'hpp': 'c',
+      'hh': 'c',
+      'hxx': 'c',
+      'cs': 'c', // Use 'c' for C# to avoid issues
+      
+      // Shell Scripts
+      'sh': 'bash',
+      'bash': 'bash',
+      'zsh': 'bash',
+      'fish': 'bash',
+      'ps1': 'bash',
+      'psm1': 'bash',
+      'bat': 'bash',
+      'cmd': 'bash',
+      
+      // Data & Config
       'json': 'json',
-      'md': 'markdown',
+      'yaml': 'yaml',
       'yml': 'yaml',
-      'yaml': 'yaml'
+      'toml': 'yaml',
+      'ini': 'yaml',
+      'conf': 'yaml',
+      'cfg': 'yaml',
+      
+      // Database
+      'sql': 'sql',
+      'sqlite': 'sql',
+      'mysql': 'sql',
+      'pgsql': 'sql',
+      
+      // Others - use basic highlighting
+      'go': 'javascript', // Use javascript as fallback
+      'rs': 'javascript',
+      'php': 'javascript',
+      'rb': 'javascript',
+      'swift': 'javascript',
+      'md': 'text',
+      'markdown': 'text',
+      'rst': 'text',
+      'txt': 'text',
+      'dockerfile': 'bash',
+      'docker': 'bash',
+      'makefile': 'bash',
+      'make': 'bash',
+      'log': 'text',
+      'diff': 'text',
+      'patch': 'text'
     };
     return languageMap[ext] || 'text';
   };
+
+  // Prism.js highlighting with line numbers
+  const codeRef = useRef(null);
+
+  useEffect(() => {
+    if (codeRef.current && fileContent) {
+      // Small delay to ensure DOM is ready
+      const timeoutId = setTimeout(() => {
+        try {
+          const codeElement = codeRef.current.querySelector('code');
+          const preElement = codeRef.current;
+          
+          if (codeElement && preElement) {
+            // Clear any existing highlighting classes
+            codeElement.className = codeElement.className.replace(/language-\w+/g, '');
+            const language = getLanguage(selectedFile);
+            codeElement.classList.add(`language-${language}`);
+            
+            // Set the content first
+            codeElement.textContent = fileContent;
+            
+            // Check if the language is supported by Prism
+            if (Prism.languages[language]) {
+              Prism.highlightElement(codeElement);
+            } else {
+              console.warn(`Language '${language}' not supported by Prism, falling back to text`);
+              codeElement.className = codeElement.className.replace(/language-\w+/g, '');
+              codeElement.classList.add('language-text');
+            }
+          }
+        } catch (error) {
+          console.warn('Prism highlighting error:', error);
+          // Ensure the code is still readable even if highlighting fails
+          const codeElement = codeRef.current?.querySelector('code');
+          if (codeElement) {
+            codeElement.className = 'language-text text-sm leading-6';
+            codeElement.textContent = fileContent;
+          }
+        }
+      }, 10);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [fileContent, selectedFile]);
 
   // Calculate the width for code panel based on active panels
   const getCodePanelWidth = () => {
@@ -67,6 +202,7 @@ const CodeViewer = ({
               repo={repo}
               onClose={onCloseQuestionPanel}
               onAskQuestion={onAskQuestion}
+              projectIndex={projectIndex}
             />
           )}
         </div>
@@ -81,7 +217,7 @@ const CodeViewer = ({
         <div className="flex items-center space-x-3">
           <Code className="w-5 h-5 text-purple-400" />
           <span className="text-white font-medium text-sm">{selectedFile}</span>
-          <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded">
+          <span className={`text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded language-badge file-icon-${getLanguage(selectedFile)}`}>
             {getLanguage(selectedFile)}
           </span>
         </div>
@@ -118,9 +254,9 @@ const CodeViewer = ({
       <div className="flex-1 flex overflow-hidden">
         {/* Code Content */}
         <div className={`${getCodePanelWidth()} bg-slate-950/40 overflow-auto transition-all duration-300`}>
-          <pre className="text-sm text-slate-300 font-mono p-6 min-h-full">
-            <code className="whitespace-pre-wrap break-words leading-6">
-              {fileContent}
+          <pre className="line-numbers" ref={codeRef}>
+            <code className={`language-${getLanguage(selectedFile)} text-sm leading-6`}>
+              {/* Content will be set programmatically in useEffect */}
             </code>
           </pre>
         </div>
@@ -140,6 +276,7 @@ const CodeViewer = ({
             repo={repo}
             onClose={onCloseQuestionPanel}
             onAskQuestion={onAskQuestion}
+            projectIndex={projectIndex}
           />
         )}
       </div>
