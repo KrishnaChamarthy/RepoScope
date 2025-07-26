@@ -67,11 +67,6 @@ services:
         value: "3000"
       - key: SESSION_SECRET
         generateValue: true
-      - key: FRONTEND_URL
-        fromService:
-          type: web
-          name: frontend
-          property: host
       # Add these manually in Render dashboard for security
       # - key: GITHUB_CLIENT_ID
       #   sync: false
