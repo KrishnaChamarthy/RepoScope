@@ -1,0 +1,9 @@
+# Lightweight models for Render deployment
+# Optimized for Render's resource constraints
+
+# Smallest functional model for basic code analysis
+llama3.2:1b
+
+# Uncomment only if you have a Standard+ plan
+# llama3.2:3b
+# codellama:7b-code

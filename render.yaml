@@ -28,17 +28,17 @@ services:
     # Environment variables for configuring Ollama.
     envVars:
       - key: OLLAMA_KEEP_ALIVE
-        value: 24h
+        value: "24h"
       - key: OLLAMA_HOST
-        value: 0.0.0.0:11434
+        value: "0.0.0.0:11434"
       - key: OLLAMA_NUM_PARALLEL
-        value: 2
+        value: "2"
       - key: OLLAMA_MAX_LOADED_MODELS
-        value: 2
+        value: "2"
       - key: OLLAMA_NUM_THREAD
-        value: 8
+        value: "8"
       - key: OLLAMA_FLASH_ATTENTION
-        value: 1
+        value: "1"
 
   # -----------------
   # Backend Service
@@ -53,6 +53,9 @@ services:
     # The 'Standard' instance plan provides 1GB RAM and 1 vCPU.
     plan: standard 
     
+    # Health check endpoint
+    healthCheckPath: /health
+    
     # Environment variables for the backend.
     # The OLLAMA_URL is automatically injected by Render using the private service's name.
     envVars:
@@ -60,6 +63,22 @@ services:
         value: http://reposcope-ollama:11434
       - key: NODE_ENV
         value: production # It's best practice to use 'production' on Render
+      - key: PORT
+        value: "3000"
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: frontend
+          property: url
+      # Add these manually in Render dashboard for security
+      # - key: GITHUB_CLIENT_ID
+      #   sync: false
+      # - key: GITHUB_CLIENT_SECRET
+      #   sync: false
+      # - key: GITHUB_TOKEN
+      #   sync: false
 
   # -----------------
   # Frontend Service
