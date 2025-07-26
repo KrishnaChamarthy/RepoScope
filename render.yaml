@@ -1,0 +1,84 @@
+# render.yaml
+# This Blueprint defines a three-part application for deployment on Render.
+# It includes a frontend, a backend, and an Ollama private service.
+
+services:
+  # -----------------
+  # Ollama Service
+  # This is a Private Service because it only needs to be accessed by the backend.
+  # It uses a pre-built Docker image and has a persistent disk for model data.
+  # -----------------
+  - type: pserv # 'pserv' stands for Private Service
+    name: reposcope-ollama
+    runtime: docker
+    image:
+      url: ollama/ollama:latest # Using the public image from Docker Hub
+    
+    # The 'Pro' instance type is selected to provide 8GB RAM and 4 vCPUs,
+    # matching the resource limits in the docker-compose file.
+    # You might need a higher plan depending on the models you load.
+    plan: pro 
+    
+    # Create a persistent disk to store the Ollama models, equivalent to a Docker volume.
+    disks:
+      - name: ollama-data
+        mountPath: /root/.ollama
+        sizeGB: 10 # Adjust size as needed for your models
+
+    # Environment variables for configuring Ollama.
+    envVars:
+      - key: OLLAMA_KEEP_ALIVE
+        value: 24h
+      - key: OLLAMA_HOST
+        value: 0.0.0.0:11434
+      - key: OLLAMA_NUM_PARALLEL
+        value: 2
+      - key: OLLAMA_MAX_LOADED_MODELS
+        value: 2
+      - key: OLLAMA_NUM_THREAD
+        value: 8
+      - key: OLLAMA_FLASH_ATTENTION
+        value: 1
+
+  # -----------------
+  # Backend Service
+  # This is a Web Service, built from a local Dockerfile.
+  # It connects to the private Ollama service.
+  # -----------------
+  - type: web
+    name: backend
+    runtime: docker
+    dockerfilePath: ./Server/Dockerfile # Path to the backend's Dockerfile
+    
+    # The 'Standard' instance plan provides 1GB RAM and 1 vCPU.
+    plan: standard 
+    
+    # Environment variables for the backend.
+    # The OLLAMA_URL is automatically injected by Render using the private service's name.
+    envVars:
+      - key: OLLAMA_URL
+        value: http://reposcope-ollama:11434
+      - key: NODE_ENV
+        value: production # It's best practice to use 'production' on Render
+
+  # -----------------
+  # Frontend Service
+  # This is a Web Service, built from a local Dockerfile.
+  # It connects to the public URL of the backend service.
+  # -----------------
+  - type: web
+    name: frontend
+    runtime: docker
+    dockerfilePath: ./Client/Dockerfile # Path to the frontend's Dockerfile
+    
+    # The 'Starter' plan is sufficient for most frontend applications.
+    plan: starter 
+    
+    # Environment variables for the frontend.
+    # 'fromService' tells Render to inject the public URL of the backend service.
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: backend
+          property: url # Injects the live URL, e.g., https://backend-xyz.onrender.com
