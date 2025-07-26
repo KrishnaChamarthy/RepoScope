@@ -71,7 +71,7 @@ services:
         fromService:
           type: web
           name: frontend
-          property: url
+          property: host
       # Add these manually in Render dashboard for security
       # - key: GITHUB_CLIENT_ID
       #   sync: false
@@ -100,4 +100,4 @@ services:
         fromService:
           type: web
           name: backend
-          property: url # Injects the live URL, e.g., https://backend-xyz.onrender.com
+          property: host # Injects the live URL, e.g., https://backend-xyz.onrender.com
